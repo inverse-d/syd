@@ -99,12 +99,19 @@ impl Backup {
         Ok(())
     }
 
-    pub fn commit_and_push(&self, remote_url: &str) -> Result<()> {
+    pub fn commit_and_push(&self) -> Result<()> {
         let repo = git2::Repository::open(&self.config.backup_folder)?;
         
         // Add all files
         let mut index = repo.index()?;
         index.add_all(["*"].iter(), git2::IndexAddOption::DEFAULT, None)?;
+        
+        // Check if there are changes
+        if repo.statuses(None)?.is_empty() {
+            println!("All up to date. Nothing to commit and push.");
+            return Ok(());
+        }
+        
         index.write()?;
 
         // Create commit
@@ -155,7 +162,7 @@ impl Backup {
         }
 
         // Create new remote with authentication
-        let mut remote = repo.remote_with_fetch("origin", remote_url, "+refs/heads/*:refs/remotes/origin/*")?;
+        let mut remote = repo.remote_with_fetch("origin", &self.config.git_repo, "+refs/heads/*:refs/remotes/origin/*")?;
         
         let mut push_opts = git2::PushOptions::new();
         push_opts.remote_callbacks(callbacks);
@@ -165,6 +172,31 @@ impl Backup {
         remote.push(&[refspec], Some(&mut push_opts))?;
         
         println!("Changes committed and pushed to remote");
+        Ok(())
+    }
+
+    pub fn restore_files(&self) -> Result<()> {
+        println!("Restoring files from {:?}", self.config.backup_folder);
+        for path in &self.files {
+            let file_name = path.file_name().unwrap();
+            let source = self.config.backup_folder.join(file_name);
+            
+            // Expand destination path
+            let dest = expand_tilde_path(path.to_str().unwrap())?;
+            
+            if source.exists() {
+                // Create parent directories if they don't exist
+                if let Some(parent) = dest.parent() {
+                    std::fs::create_dir_all(parent)?;
+                }
+                
+                std::fs::copy(&source, &dest)?;
+                println!("Restored {:?} to {:?}", file_name, dest);
+            } else {
+                println!("Warning: Backup file {:?} not found", source);
+            }
+        }
+        println!("Restore complete!");
         Ok(())
     }
 }
