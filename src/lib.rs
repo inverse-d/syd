@@ -175,7 +175,59 @@ impl Backup {
         Ok(())
     }
 
+    pub fn pull_from_remote(&self) -> Result<()> {
+        let repo = git2::Repository::open(&self.config.backup_folder)?;
+        
+        let mut callbacks = git2::RemoteCallbacks::new();
+        callbacks.credentials(|_url, _username_from_url, _allowed_types| {
+            git2::Cred::ssh_key_from_agent("git")
+        });
+
+        let mut fetch_opts = git2::FetchOptions::new();
+        fetch_opts.remote_callbacks(callbacks);
+
+        // Fetch from remote
+        let mut remote = repo.find_remote("origin")?;
+        remote.fetch(&["main"], Some(&mut fetch_opts), None)?;
+
+        // Get remote main branch
+        let fetch_head = repo.find_reference("FETCH_HEAD")?;
+        let fetch_commit = fetch_head.peel_to_commit()?;
+
+        // Set local main branch to remote
+        let mut reference = repo.find_reference("refs/heads/main")?;
+        reference.set_target(fetch_commit.id(), "Fast-forward update")?;
+
+        println!("Successfully pulled latest changes from remote");
+        Ok(())
+    }
+
+    pub fn clone_or_pull(&self) -> Result<()> {
+        if !self.config.backup_folder.join(".git").exists() {
+            println!("Cloning repository from remote...");
+            let mut callbacks = git2::RemoteCallbacks::new();
+            callbacks.credentials(|_url, _username_from_url, _allowed_types| {
+                git2::Cred::ssh_key_from_agent("git")
+            });
+
+            let mut fetch_opts = git2::FetchOptions::new();
+            fetch_opts.remote_callbacks(callbacks);
+
+            let mut builder = git2::build::RepoBuilder::new();
+            builder.fetch_options(fetch_opts);
+            
+            builder.clone(&self.config.git_repo, &self.config.backup_folder)?;
+            println!("Repository cloned successfully");
+        } else {
+            self.pull_from_remote()?;
+        }
+        Ok(())
+    }
+
     pub fn restore_files(&self) -> Result<()> {
+        // Clone or pull before restoring
+        self.clone_or_pull()?;
+        
         println!("Restoring files from {:?}", self.config.backup_folder);
         for path in &self.files {
             let file_name = path.file_name().unwrap();

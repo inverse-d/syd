@@ -14,6 +14,7 @@ fn main() -> Result<()> {
     let backup = Backup::new(config)?;
 
     if should_restore {
+        backup.create_backup_folder()?;
         backup.restore_files()?;
     } else {
         backup.create_backup_folder()?;
