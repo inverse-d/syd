@@ -8,3 +8,5 @@ simple-expand-tilde = "0.4.0"
 fs_extra = "1.3.0"
 thiserror = "1.0"
 git2 = "0.18"
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"

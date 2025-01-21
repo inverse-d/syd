@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 use thiserror::Error;
+use serde::Deserialize;
+use std::fs;
 
 #[derive(Error, Debug)]
 pub enum SydError {
@@ -9,6 +11,8 @@ pub enum SydError {
     TildeExpansion(String),
     #[error("Git error: {0}")]
     Git(#[from] git2::Error),
+    #[error("Failed to parse config: {0}")]
+    ConfigParse(String),
 }
 
 pub type Result<T> = std::result::Result<T, SydError>;
@@ -16,6 +20,23 @@ pub type Result<T> = std::result::Result<T, SydError>;
 pub struct Config {
     backup_folder: PathBuf,
     config_path: PathBuf,
+    pub git_repo: String,
+}
+
+#[derive(Deserialize)]
+struct ConfigFile {
+    git: GitConfig,
+    files: FilesConfig,
+}
+
+#[derive(Deserialize)]
+struct GitConfig {
+    repository: String,
+}
+
+#[derive(Deserialize)]
+struct FilesConfig {
+    paths: Vec<String>,
 }
 
 impl Config {
@@ -24,9 +45,15 @@ impl Config {
         let mut config_path = expand_tilde_path(config_path)?;
         config_path.push(config_file);
 
+        // Read and parse config file
+        let config_str = fs::read_to_string(&config_path)?;
+        let config: ConfigFile = toml::from_str(&config_str)
+            .map_err(|e| SydError::ConfigParse(e.to_string()))?;
+
         Ok(Self {
             backup_folder,
             config_path,
+            git_repo: config.git.repository,
         })
     }
 }
@@ -148,10 +175,13 @@ fn expand_tilde_path(path: &str) -> Result<PathBuf> {
 }
 
 fn read_config_files(config_path: &PathBuf) -> Result<Vec<PathBuf>> {
-    let file = std::fs::File::open(config_path)?;
-    let reader = std::io::BufReader::new(file);
-    let files: Vec<PathBuf> = std::io::BufRead::lines(reader)
-        .filter_map(|line| line.ok())
+    // Read and parse config file
+    let config_str = fs::read_to_string(config_path)?;
+    let config: ConfigFile = toml::from_str(&config_str)
+        .map_err(|e| SydError::ConfigParse(e.to_string()))?;
+    
+    let files: Vec<PathBuf> = config.files.paths
+        .into_iter()
         .map(PathBuf::from)
         .collect();
     
