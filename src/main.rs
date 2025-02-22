@@ -1,27 +1,58 @@
+use clap::{Parser, Subcommand};
+use env_logger;
 use syd::{Backup, Config, Result};
-use std::env;
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    Backup {
+        #[arg(short, long)]
+        dry_run: bool,
+    },
+    Restore {
+        #[arg(short, long)]
+        force: bool,
+    },
+    Status,
+}
 
 fn main() -> Result<()> {
-    let args: Vec<String> = env::args().collect();
-    let should_restore = args.get(1).map_or(false, |arg| arg == "--restore");
+    env_logger::init();
+    let cli = Cli::parse();
 
-    let config = Config::new(
-        "~/syd/",
-        "~/.config/syd/",
-        "syd.conf",
-    )?;
-    
+    let config = Config::new("~/syd/", "~/.config/syd/", "syd.conf")?;
     let backup = Backup::new(config)?;
 
-    if should_restore {
-        backup.create_backup_folder()?;
-        backup.restore_files()?;
-    } else {
-        backup.create_backup_folder()?;
-        backup.backup_files()?;
-        backup.init_git_repo()?;
-        backup.commit_and_push()?;
+    match &cli.command {
+        Commands::Backup { dry_run } => {
+            if *dry_run {
+                println!("Dry run - would backup files");
+            } else {
+                backup.backup_files()?;
+            }
+        }
+        Commands::Restore { force } => {
+            if *force || prompt_confirmation("Are you sure you want to restore files?") {
+                backup.restore_files()?;
+            }
+        }
+        Commands::Status => {
+            backup.status()?;
+        }
     }
-    
+
     Ok(())
+}
+
+fn prompt_confirmation(message: &str) -> bool {
+    println!("{} [y/N]", message);
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).unwrap();
+    input.trim().to_lowercase() == "y"
 }

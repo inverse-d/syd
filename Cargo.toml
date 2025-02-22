@@ -1,3 +1,4 @@
+# Backup system for dotfiles
 [package]
 name = "syd"
 version = "0.1.0"
@@ -10,3 +11,10 @@ thiserror = "1.0"
 git2 = "0.18"
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.8"
+clap = { version = "4.4", features = ["derive"] }
+log = "0.4"
+env_logger = "0.10"
+indicatif = "0.17"
+regex = "1.10"
+dialoguer = "0.11"
+chrono = "0.4"
