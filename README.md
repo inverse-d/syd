@@ -29,9 +29,6 @@ syd backup
 # Restore your dotfiles
 syd restore
 
-# Initialize a new syd configuration
-syd init
-
 # List tracked files
 syd list
 ```
