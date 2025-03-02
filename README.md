@@ -40,9 +40,11 @@ You can configure syd in a configuration file (`~/.config/syd/syd.conf`)
 #### Configuration File Example
 
 ```toml
-[paths]
-# Specify files to track
-files = [
+[files]
+# Location where files will be backed up
+folder = "~/.local/share/syd"
+# Files to track
+paths = [
     "~/.zshrc",
     "~/.vimrc",
     "~/.config/nvim/init.vim"

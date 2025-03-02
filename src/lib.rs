@@ -6,12 +6,12 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct Config {
-    pub backup: BackupConfig,
+    pub files: FileConfig,
     pub git: GitConfig,
 }
 
 #[derive(Deserialize)]
-pub struct BackupConfig {
+pub struct FileConfig {
     pub folder: String,
     pub paths: Vec<String>,
 }
@@ -32,7 +32,7 @@ impl Config {
     }
 
     pub fn create_backup_folder(&self) -> io::Result<PathBuf> {
-        let expanded_path = expand_tilde(&self.backup.folder)
+        let expanded_path = expand_tilde(&self.files.folder)
             .ok_or_else(|| Error::new(io::ErrorKind::NotFound, "Failed to expand backup folder path"))?;
         
         if !expanded_path.exists() {
@@ -74,13 +74,13 @@ pub mod operations {
 
     pub fn backup_dotfiles(config: &Config) -> io::Result<bool> {
         println!("Checking files for backup:");
-        let backup_path = expand_tilde(&config.backup.folder)
+        let backup_path = expand_tilde(&config.files.folder)
             .ok_or_else(|| Error::new(io::ErrorKind::NotFound, "Failed to expand backup folder path"))?;
 
         let mut has_changes = false;
         let mut modified_count = 0;
 
-        for path in &config.backup.paths {
+        for path in &config.files.paths {
             if let Some(original_path) = expand_tilde(path) {
                 if original_path.exists() {
                     let file_name = original_path.file_name()
@@ -181,12 +181,12 @@ pub mod operations {
 
     pub fn restore_dotfiles(config: &Config) -> io::Result<()> {
         println!("Checking files for restoration:");
-        let backup_path = expand_tilde(&config.backup.folder)
+        let backup_path = expand_tilde(&config.files.folder)
             .ok_or_else(|| Error::new(io::ErrorKind::NotFound, "Failed to expand backup folder path"))?;
 
         let mut files_restored = false;
 
-        for path in &config.backup.paths {
+        for path in &config.files.paths {
             if let Some(original_path) = expand_tilde(path) {
                 let file_name = original_path.file_name()
                     .ok_or_else(|| Error::new(io::ErrorKind::InvalidInput, "Invalid path"))?;
@@ -218,10 +218,10 @@ pub mod operations {
 
     pub fn list_dotfiles(config: &Config) -> io::Result<()> {
         println!("Tracked dotfiles:");
-        let backup_path = expand_tilde(&config.backup.folder)
+        let backup_path = expand_tilde(&config.files.folder)
             .ok_or_else(|| Error::new(io::ErrorKind::NotFound, "Failed to expand backup folder path"))?;
 
-        for path in &config.backup.paths {
+        for path in &config.files.paths {
             if let Some(original_path) = expand_tilde(path) {
                 let file_name = original_path.file_name()
                     .ok_or_else(|| Error::new(io::ErrorKind::InvalidInput, "Invalid path"))?;
