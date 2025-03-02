@@ -215,4 +215,32 @@ pub mod operations {
         
         Ok(())
     }
+
+    pub fn list_dotfiles(config: &Config) -> io::Result<()> {
+        println!("Tracked dotfiles:");
+        let backup_path = expand_tilde(&config.backup.folder)
+            .ok_or_else(|| Error::new(io::ErrorKind::NotFound, "Failed to expand backup folder path"))?;
+
+        for path in &config.backup.paths {
+            if let Some(original_path) = expand_tilde(path) {
+                let file_name = original_path.file_name()
+                    .ok_or_else(|| Error::new(io::ErrorKind::InvalidInput, "Invalid path"))?;
+                
+                let backup_file = backup_path.join(file_name);
+                let status = if !original_path.exists() {
+                    "missing"
+                } else if !backup_file.exists() {
+                    "not backed up"
+                } else if files_are_different(&original_path, &backup_file)? {
+                    "modified"
+                } else {
+                    "synced"
+                };
+
+                println!("{:<50} [{}]", path, status);
+            }
+        }
+        
+        Ok(())
+    }
 } 

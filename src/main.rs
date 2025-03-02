@@ -9,6 +9,8 @@ fn main() {
             .about("Backup dotfiles to repository"))
         .subcommand(Command::new("restore")
             .about("Restore dotfiles from repository"))
+        .subcommand(Command::new("list")
+            .about("List tracked dotfiles and their status"))
         .get_matches();
 
     match matches.subcommand() {
@@ -27,6 +29,11 @@ fn main() {
             let config = Config::load().expect("Failed to load config");
             operations::restore_dotfiles(&config)
                 .expect("Failed to restore dotfiles");
+        }
+        Some(("list", _)) => {
+            let config = Config::load().expect("Failed to load config");
+            operations::list_dotfiles(&config)
+                .expect("Failed to list dotfiles");
         }
         _ => unreachable!("Exhausted list of subcommands and subcommand_required prevents `None`"),
     }
