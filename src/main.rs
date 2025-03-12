@@ -1,47 +1,47 @@
-use io::Error;
-use simple_expand_tilde::*;
-use std::fs::File;
-use std::io::BufRead;
-use std::path::PathBuf;
-use std::{fs, io};
+use clap::Command;
+use syd::{Config, operations};
+use env_logger;
 
 fn main() {
-    let backup_folder_path = PathBuf::from("~/syd/");
-    let config_path = "~/.config/syd/";
-    let config_file = "syd.conf";
-    let config = read_config_path(config_path.to_string(), config_file.to_string());
-    println!("{:?}", read_config(config));
-    create_backup_folder(backup_folder_path).unwrap()
-}
-fn read_config_path(config_path: String, config_file: String) -> PathBuf {
-    let mut config = expand_tilde(config_path).expect("Failed to expand tilde into config path");
-    config.push(PathBuf::from(config_file));
-    config
-}
-fn read_config(config:PathBuf) -> Vec<PathBuf> {
-    let mut paths = Vec::new();
-    let file = File::open(config).expect("Could not open file");
-    let reader = io::BufReader::new(file);
-    for line in reader.lines() {
-        let line = line.expect("Could not read line");
-        paths.push(PathBuf::from(line));
+    env_logger::init();
+
+    let matches = Command::new("syd")
+        .about("Backup and restore dotfiles")
+        .subcommand_required(true)
+        .subcommand(Command::new("backup")
+            .about("Backup dotfiles to repository"))
+        .subcommand(Command::new("restore")
+            .about("Restore dotfiles from repository"))
+        .subcommand(Command::new("list")
+            .about("List tracked dotfiles and their status"))
+        .get_matches();
+
+    if let Err(e) = run(matches) {
+        eprintln!("Error: {}", e);
+        std::process::exit(1);
     }
-    paths
 }
-fn create_backup_folder(backup_folder_path: PathBuf) -> io::Result<()> {
-    let expanded_path = expand_tilde(backup_folder_path).ok_or_else(|| {
-        Error::new(
-        io::ErrorKind::NotFound,
-        "Failed to expand tilde"
-        )})?;
-    if !expanded_path.exists() {
-        fs::create_dir(&expanded_path)?;
-    } else {
-        println!("Backup folder {:?} already exist", expanded_path)
+
+fn run(matches: clap::ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
+    match matches.subcommand() {
+        Some(("backup", _)) => {
+            let config = Config::load()?;
+            let backup_path = config.create_backup_folder()?;
+            let has_changes = operations::backup_dotfiles(&config)?;
+            if has_changes {
+                operations::push_to_git(&backup_path, &config.git.remote_url)?;
+                println!("Changes pushed to remote repository");
+            }
+        }
+        Some(("restore", _)) => {
+            let config = Config::load()?;
+            operations::restore_dotfiles(&config)?;
+        }
+        Some(("list", _)) => {
+            let config = Config::load()?;
+            operations::list_dotfiles(&config)?;
+        }
+        _ => unreachable!("Exhausted list of subcommands and subcommand_required prevents `None`"),
     }
     Ok(())
 }
-fn backup_dotfiles() {}
-fn restore_dotfiles() {}
-fn create_local_repo() {}
-fn push_to_git() {}
