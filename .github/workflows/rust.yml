@@ -27,9 +27,6 @@ jobs:
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: syd-macos-x86_64
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            artifact_name: syd-macos-arm64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: syd-windows-x86_64.exe
@@ -123,15 +120,6 @@ jobs:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: artifacts/syd-macos-x86_64
         asset_name: ${{ github.ref_name }}-syd-macos-x86_64
-        asset_content_type: application/octet-stream
-    - name: Upload macOS ARM64
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/syd-macos-arm64
-        asset_name: ${{ github.ref_name }}-syd-macos-arm64
         asset_content_type: application/octet-stream
     - name: Upload Windows x86_64
       uses: actions/upload-release-asset@v1
