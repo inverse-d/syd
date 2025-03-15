@@ -60,9 +60,6 @@ branch = "main"
 
 This project is licensed under the Unlicense License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
-
-- Original Go version: [syd_go](https://github.com/inverse-d/syd_go)
 
 ## Status
 
