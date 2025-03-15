@@ -97,12 +97,57 @@ jobs:
         release_name: Release ${{ github.ref_name }}
         draft: false
         prerelease: false
-    - name: Upload Release Assets
+    - name: Upload Linux x86_64
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/syd-*
-        asset_name: ${{ github.ref_name }}-${{ asset_path }}
+        asset_path: artifacts/syd-linux-x86_64
+        asset_name: ${{ github.ref_name }}-syd-linux-x86_64
         asset_content_type: application/octet-stream
+    - name: Upload Linux ARM64
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: artifacts/syd-linux-arm64
+        asset_name: ${{ github.ref_name }}-syd-linux-arm64
+        asset_content_type: application/octet-stream
+    - name: Upload macOS x86_64
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: artifacts/syd-macos-x86_64
+        asset_name: ${{ github.ref_name }}-syd-macos-x86_64
+        asset_content_type: application/octet-stream
+    - name: Upload macOS ARM64
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: artifacts/syd-macos-arm64
+        asset_name: ${{ github.ref_name }}-syd-macos-arm64
+        asset_content_type: application/octet-stream
+    - name: Upload Windows x86_64
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: artifacts/syd-windows-x86_64.exe
+        asset_name: ${{ github.ref_name }}-syd-windows-x86_64.exe
+        asset_content_type: application/octet-stream
+    - name: Upload Checksums
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: artifacts/*.sha256
+        asset_name: ${{ github.ref_name }}-checksums.sha256
+        asset_content_type: text/plain
